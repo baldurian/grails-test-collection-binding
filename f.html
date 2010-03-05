@@ -1,0 +1,169 @@
+<html>
+<head>
+<style>
+h1{
+font-size:120%
+color:blue
+}
+h2{
+font-size:90%
+}
+h3{
+font-size:85%
+}
+pre{
+font-size:80%
+}
+
+</style>
+</head>
+<body>
+<h1>Test collection binding of Set based properties. </h1>
+<h2>Used Grails 1.2.1.<h2>
+
+<h2>The latest doc binding section:<br>
+http://grails.org/doc/latest/</h2>
+<pre>
+Section 6.1.6
+Data Binding and Many-ended Associations
+
+If you have a one-to-many or many-to-many association there are different techniques for data binding depending of the association type.
+
+If you have a Set based association (default for a hasMany) then the simplest way to populate an association is to simply send a list of identifiers. For example consider the usage of below:
+
+This produces a select box that allows you to select multiple values. In this case if you submit the form Grails will automatically use the identifiers from the select box to populate the books association.
+</pre>
+
+<h3>
+We have two foo domain classes:
+</h3>
+<pre>
+class Album {
+String name
+Set songs
+static hasMany = [songs:Song]
+}
+class Album {
+String name
+Set songs
+static hasMany = [songs:Song]
+static constraints = {
+    album(nullable:true)
+}
+}
+</pre>
+<p>
+We want Grails to automatically bind the song to the album if in the params it founds entries like [‘songs’:songId]. Were song id is a string representation of an existent song.
+</p>
+<h3>
+Controller code put on the update action:
+</h3>
+<pre>
+    def update = {
+
+        println "---------------"
+        println "Inital Params map ------->" + params
+        println "---------------"
+        params.put "songs", "1"
+        println "---------------"
+        println "Song 1 added to the params ------->" + params
+        println "---------------"
+
+        def albumInstance = Album.get(params.id)
+        if (albumInstance) {
+
+            println "----------------------------------"
+            println "Album data before 1st binding -------"
+            println albumInstance.dump()
+            println "----------------------------------"
+
+            albumInstance.properties = params
+
+            println "----------------------------------"
+            println "Album data after 1st binding -------"
+            println albumInstance.dump()
+            println "----------------------------------"
+
+            params."songs" = "2"
+
+            println "----------------------------------"
+            println "Changed song 1 to song 2 in the params Map ------->" + params
+            println "----------------------------------"
+
+            albumInstance.properties = params
+
+            println "----------------------------------"
+            println "Album after 2nd binding -------"
+            println albumInstance.dump()
+            println "----------------------------------"
+
+            if (!albumInstance.hasErrors() && albumInstance.save(flush: true)) {
+
+                println "----------------------------------"
+                println "Album after save -------"
+                println albumInstance.dump()
+                println "----------------------------------"
+
+                println "----------------------------------"
+                println "Songs data after save -------"
+                println Song.get(1).dump()
+                println Song.get(2).dump()
+                println "----------------------------------"
+
+                flash.message = "${message(code: 'default.updated.message', args: [message(code: 'album.label', default: 'Album'), albumInstance.id])}"
+                redirect(action: "show", id: albumInstance.id)
+            }
+            else {
+                render(view: "edit", model: [albumInstance: albumInstance])
+            }
+        }
+        else {
+            flash.message = "${message(code: 'default.not.found.message', args: [message(code: 'album.label', default: 'Album'), params.id])}"
+            redirect(action: "list")
+        }
+    }
+</pre>
+<h3>Execution trace
+</h3>
+<pre>
+Server running. Browse to http://localhost:8080/test-collection-binding
+---------------
+Inital Params map ------->[id:1, name:album1, _action_update:Update, version:0, action:index, controller:album]
+---------------
+---------------
+Song 1 added to the params ------->[id:1, name:album1, _action_update:Update, version:0, action:index, controller:album, songs:1]
+---------------
+----------------------------------
+Album data before 1st binding -------
+&lt;foo.Album@7e48c33e name=album1 songs=[] id=1 version=0&gt;
+----------------------------------
+----------------------------------
+Album data after 1st binding -------
+&lt;foo.Album@7e48c33e name=album1 songs=[foo.Song : 1] id=1 version=0&gt;
+----------------------------------
+----------------------------------
+Changed song 1 to song 2 in the params Map -------&gt;[id:1, name:album1, _action_update:Update, version:0, action:index, controller:album, songs:2]
+----------------------------------
+----------------------------------
+Album after 2nd binding -------
+&lt;foo.Album@7e48c33e name=album1 songs=[foo.Song : 2] id=1 version=0&gt;
+----------------------------------
+----------------------------------
+Album after save -------
+&lt;foo.Album@7e48c33e name=album1 songs=[foo.Song : 2] id=1 version=1&gt;
+----------------------------------
+----------------------------------
+Songs data after save -------
+&lt;foo.Song@4c00c0cf name=song1 album=foo.Album : 1 id=1 version=2&gt;
+&lt;foo.Song@2795a626 name=song2 album=foo.Album : 1 id=2 version=2&gt;
+----------------------------------
+</pre>
+<h3>Result
+</h3>
+<pre>
+The collection only have the selected song associated,
+but song1 album property should be null, and is not.
+Is the intended behaviour? How can I change it (override grails default binder?)?
+</pre>
+</body>
+</html>
