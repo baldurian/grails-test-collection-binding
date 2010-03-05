@@ -43,17 +43,19 @@ String name
 Set songs
 static hasMany = [songs:Song]
 }
-class Album {
-String name
-Set songs
-static hasMany = [songs:Song]
-static constraints = {
-    album(nullable:true)
-}
+class Song {
+ 
+    String name
+    Album album
+ 
+    static belongsTo = [album: Album]
+    static constraints = {
+        album(nullable:true)
+    }
 }
 </pre>
 <p>
-We want Grails to automatically bind the song to the album if in the params it founds entries like [‘songs’:songId]. Were song id is a string representation of an existent song.
+We want Grails to automatically bind the song to the album if in the params it founds entries like ["songs":songId]. Were song id is a string representation of an existent song.
 </p>
 <h3>
 Controller code put on the update action:
@@ -161,7 +163,7 @@ Songs data after save -------
 <h3>Result
 </h3>
 <pre>
-The collection only have the selected song associated,
+The collection only has the selected song associated,
 but song1 album property should be null, and is not.
 Is the intended behaviour? How can I change it (override grails default binder?)?
 </pre>
